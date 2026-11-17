@@ -1,5 +1,6 @@
 package com.apartment.tracker;
 
+import com.apartment.tracker.notice.NoticeService;
 import com.apartment.tracker.profile.ResidentProfile;
 import com.apartment.tracker.profile.ResidentProfileService;
 import org.springframework.security.core.Authentication;
@@ -10,9 +11,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class PageController {
     private final ResidentProfileService profileService;
+    private final NoticeService noticeService;
 
-    public PageController(ResidentProfileService profileService) {
+    public PageController(ResidentProfileService profileService, NoticeService noticeService) {
         this.profileService = profileService;
+        this.noticeService = noticeService;
     }
 
     @GetMapping("/")
@@ -40,6 +43,7 @@ public class PageController {
         ResidentProfile profile = profileService.getOrCreate(authentication.getName());
         model.addAttribute("displayName", profile.getFullName());
         model.addAttribute("apartmentNumber", profile.getApartmentNumber());
+        model.addAttribute("latestNotices", noticeService.getLatest());
         return "dashboard";
     }
 }

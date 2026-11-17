@@ -16,6 +16,10 @@ public class NoticeService {
         return repository.findAllByOrderByPublishedAtDesc();
     }
 
+    public List<Notice> getLatest() {
+        return repository.findTop3ByOrderByPublishedAtDesc();
+    }
+
     public void publish(String title, String description, String publishedBy) {
         Notice notice = new Notice();
         notice.setTitle(title.trim());

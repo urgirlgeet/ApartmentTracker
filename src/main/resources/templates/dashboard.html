@@ -18,6 +18,26 @@
       <p class="muted" th:if="${isMaintenanceHead}">Maintenance team dashboard</p>
       <p class="muted" th:if="${isResident}">Resident dashboard</p>
     </section>
+    <section class="dashboard-notices" aria-labelledby="latest-notices-heading">
+      <div class="section-heading">
+        <h2 id="latest-notices-heading">Latest notices</h2>
+        <a class="text-link" th:href="@{/notices}">View all notices &rarr;</a>
+      </div>
+      <div class="notice-list">
+        <article class="notice-card dashboard-notice" th:each="notice : ${latestNotices}">
+          <div class="notice-meta">
+            <span class="eyebrow" th:text="${notice.publishedBy}">Administrator</span>
+            <time th:text="${notice.publishedAt}">Date</time>
+          </div>
+          <h2 th:text="${notice.title}">Notice title</h2>
+          <p class="notice-description dashboard-notice-description"
+             th:text="${notice.description}">Notice details</p>
+        </article>
+        <div class="panel empty-state" th:if="${#lists.isEmpty(latestNotices)}">
+          There are no notices yet.
+        </div>
+      </div>
+    </section>
     <section class="card-grid">
       <a class="feature-card" th:href="@{/complaints}">
         <span class="feature-icon">01</span>
