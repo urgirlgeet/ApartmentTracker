@@ -63,3 +63,19 @@ $env:SUPABASE_DB_PASSWORD = "<database-password>"
 The schema is managed by Hibernate with `spring.jpa.hibernate.ddl-auto=update`. For a deployed or shared environment, replace the demo accounts and use a deliberate schema-migration strategy.
 
 The next billing enhancement could integrate a real payment provider. That should be done only after choosing a provider and adding verified payment webhooks, idempotency, and reconciliation; the current payment entry is explicitly a local demo record and does not transfer money.
+
+## Deploy on Render
+
+The repository includes a Java 17 `Dockerfile` for Render. Create a Render **Web Service** from this GitHub repository, choose **Docker** as the runtime, and use the repository root as the Dockerfile directory. Render will build and deploy the app when changes are pushed to `main`.
+
+Use a persistent PostgreSQL database such as Supabase rather than the local H2 database for a public deployment. Add these environment variables in the Render service settings; copy the JDBC URL, username, and password from your database provider's connection settings, and do not commit them:
+
+| Variable | Value |
+|---|---|
+| `SUPABASE_DB_URL` | PostgreSQL JDBC URL, for example `jdbc:postgresql://<host>:<port>/postgres?sslmode=require` |
+| `SUPABASE_DB_USERNAME` | Database username from the provider |
+| `SUPABASE_DB_PASSWORD` | Database password from the provider |
+
+The app listens on Render's `PORT` environment variable. Demo accounts are created when absent and use the default credentials listed above unless you set the corresponding `DEMO_*_PASSWORD` variables in Render. These are intentionally public demo logins: use only fictional data and expect anyone to be able to make changes with the admin account.
+
+Complaint images are stored on the service filesystem by default. Render's filesystem is ephemeral, so images may be lost on redeploy or restart. To retain them, attach a persistent disk to the web service, mount it at `/var/data`, and set `UPLOADS_DIRECTORY=/var/data/uploads`.
