@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maintenance bills | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header th:replace="~{fragments/navigation :: navigation}"></header>
+  <main class="container">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">MAINTENANCE BILLING</p>
+        <h1 th:text="${isAdmin ? 'Billing overview' : 'My bills'}">My bills</h1>
+        <p class="muted" th:if="${!isAdmin}">Bills and payment history for your registered apartment.</p>
+      </div>
+    </div>
+
+    <p class="success" th:if="${param.created}">The bill was created.</p>
+    <p class="success" th:if="${paymentRecorded}">Simulated payment recorded. No money was transferred.</p>
+    <p class="alert" th:if="${paymentError}" th:text="${paymentError}"></p>
+
+    <section class="summary-grid billing-summary" th:if="${isAdmin}">
+      <article class="summary-card">
+        <span>Amount billed</span>
+        <strong th:text="|${totalBilled}|">0.00</strong>
+      </article>
+      <article class="summary-card">
+        <span>Collected</span>
+        <strong th:text="|${totalCollected}|">0.00</strong>
+      </article>
+      <article class="summary-card">
+        <span>Outstanding</span>
+        <strong th:text="|${totalOutstanding}|">0.00</strong>
+      </article>
+    </section>
+
+    <details class="panel bill-create" th:if="${isAdmin}">
+      <summary>Create a monthly bill</summary>
+      <div class="bill-create-content">
+        <p class="alert" th:if="${billError}" th:text="${billError}"></p>
+        <form method="post" th:action="@{/bills}" th:object="${billForm}" class="form-grid">
+        <div>
+          <label for="apartmentNumber">Flat</label>
+          <select id="apartmentNumber" th:field="*{apartmentNumber}" required>
+            <option value="">Choose a flat</option>
+            <option th:each="apartment : ${apartments}" th:value="${apartment}" th:text="${apartment}"></option>
+          </select>
+          <span class="field-error" th:errors="*{apartmentNumber}"></span>
+        </div>
+        <div>
+          <label for="billingMonth">Billing month</label>
+          <input id="billingMonth" type="month" th:field="*{billingMonth}" required>
+          <span class="field-error" th:errors="*{billingMonth}"></span>
+        </div>
+        <div>
+          <label for="dueDate">Due date</label>
+          <input id="dueDate" type="date" th:field="*{dueDate}" required>
+          <span class="field-error" th:errors="*{dueDate}"></span>
+        </div>
+        <div class="wide">
+          <h3>Itemized charges</h3>
+          <p class="muted">Add up to four charges; leave unused rows empty.</p>
+          <div class="charge-row" th:each="item, row : *{items}">
+            <div>
+              <label th:for="|charge-description-${row.index}|"
+                     th:text="|Charge ${row.index + 1} description|">Description</label>
+              <input th:id="|charge-description-${row.index}|"
+                     th:field="*{items[__${row.index}__].description}"
+                     maxlength="120" placeholder="e.g. Monthly maintenance">
+            </div>
+            <div>
+              <label th:for="|charge-amount-${row.index}|">Amount</label>
+              <input th:id="|charge-amount-${row.index}|"
+                     th:field="*{items[__${row.index}__].amount}"
+                     type="number" min="0.01" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+        <div class="wide"><button type="submit">Create bill</button></div>
+        </form>
+      </div>
+    </details>
+
+    <section class="panel" th:if="${isAdmin}">
+      <div class="section-heading billing-list-heading">
+        <div>
+          <h2>Monthly bills</h2>
+          <p class="muted">Compact overview of all bills. Expand a row for charges and payment history.</p>
+        </div>
+        <span class="role-badge" th:text="|${#lists.size(bills)} bills|">0 bills</span>
+      </div>
+      <form class="billing-filter" method="get" th:action="@{/bills}">
+        <label for="statusFilter">Show bills</label>
+        <select id="statusFilter" name="status">
+          <option value="ALL" th:selected="${statusFilter == 'ALL'}">All statuses</option>
+          <option value="PAID" th:selected="${statusFilter == 'PAID'}">Paid</option>
+          <option value="UNPAID" th:selected="${statusFilter == 'UNPAID'}">Unpaid</option>
+          <option value="PARTIALLY_PAID" th:selected="${statusFilter == 'PARTIALLY_PAID'}">Partially paid</option>
+        </select>
+        <button class="button-small" type="submit">Apply</button>
+      </form>
+      <div class="table-wrap">
+        <table class="billing-table">
+          <thead>
+            <tr>
+              <th>Flat / month</th>
+              <th>Due</th>
+              <th>Total</th>
+              <th>Collected</th>
+              <th>Outstanding</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="bill : ${bills}">
+              <td><strong th:text="${bill.apartmentNumber}">A-1</strong><br>
+                <span class="muted" th:text="${bill.billingMonth}">Month</span>
+              </td>
+              <td th:text="${bill.dueDate}">Due date</td>
+              <td th:text="${bill.totalAmount}">0.00</td>
+              <td th:text="${bill.paidAmount}">0.00</td>
+              <td th:text="${bill.balance}">0.00</td>
+              <td><span class="status-badge" th:classappend="${bill.overdue ? ' status-overdue' : ''}"
+                        th:text="${bill.status}">UNPAID</span></td>
+              <td>
+                <details class="billing-details">
+                  <summary>View</summary>
+                  <div class="billing-detail-content">
+                    <strong>Itemized charges</strong>
+                    <ul>
+                      <li th:each="item : ${bill.items}"
+                          th:text="|${item.description}: ${item.amount}|">Charge: 0.00</li>
+                    </ul>
+                    <strong>Payments</strong>
+                    <ul>
+                      <li th:each="payment : ${bill.payments}"
+                          th:text="|${payment.recordedAt} · ${payment.amount} · ${payment.reference == null ? 'No reference' : payment.reference}|">
+                        Payment entry
+                      </li>
+                      <li class="muted" th:if="${#lists.isEmpty(bill.payments)}">No payments recorded.</li>
+                    </ul>
+                  </div>
+                </details>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(bills)}">
+              <td class="empty-state" colspan="7">No bills created yet. Use “Create a monthly bill” to begin.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bill-list" th:unless="${isAdmin}">
+      <article class="panel bill-card" th:each="bill : ${bills}">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow" th:text="|${bill.billingMonth} · Flat ${bill.apartmentNumber}|">Month · Flat</p>
+            <h2 th:text="|Due ${bill.dueDate}|">Due date</h2>
+          </div>
+          <span class="status-badge" th:classappend="${bill.overdue ? ' status-overdue' : ''}"
+                th:text="${bill.status}">UNPAID</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Charge</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr th:each="item : ${bill.items}">
+                <td th:text="${item.description}">Maintenance</td>
+                <td th:text="${item.amount}">0.00</td>
+              </tr>
+              <tr class="bill-total">
+                <th>Total</th>
+                <th th:text="${bill.totalAmount}">0.00</th>
+              </tr>
+              <tr>
+                <td>Paid</td>
+                <td th:text="${bill.paidAmount}">0.00</td>
+              </tr>
+              <tr>
+                <th>Balance</th>
+                <th th:text="${bill.balance}">0.00</th>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <details class="payment-history">
+          <summary>Payment history (<span th:text="${#lists.size(bill.payments)}">0</span>)</summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Date</th><th>Amount</th><th>Reference</th></tr>
+              </thead>
+              <tbody>
+                <tr th:each="payment : ${bill.payments}">
+                  <td th:text="${payment.recordedAt}">Date</td>
+                  <td th:text="${payment.amount}">0.00</td>
+                  <td th:text="${payment.reference == null ? '—' : payment.reference}">—</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(bill.payments)}">
+                  <td class="empty-state" colspan="3">No payments recorded.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+        <form method="post" class="payment-form"
+              th:if="${!isAdmin and bill.balance.signum() > 0}"
+              th:action="@{/bills/{id}/payments(id=${bill.id})}">
+          <h3>Record a simulated payment</h3>
+          <p class="muted">Demo only — this records a payment entry and does not transfer money.</p>
+          <div class="payment-fields">
+            <div>
+              <label th:for="|payment-amount-${bill.id}|">Amount</label>
+              <input th:id="|payment-amount-${bill.id}|" name="amount"
+                     type="number" min="0.01" step="0.01" th:max="${bill.balance}" required>
+            </div>
+            <div>
+              <label th:for="|payment-reference-${bill.id}|">Reference <span class="muted">(optional)</span></label>
+              <input th:id="|payment-reference-${bill.id}|" name="reference" maxlength="100">
+            </div>
+            <button type="submit">Record payment</button>
+          </div>
+        </form>
+      </article>
+      <section class="panel" th:if="${#lists.isEmpty(bills)}">
+        <p class="empty-state" th:text="${isAdmin ? 'No bills created yet.' : 'There are no bills associated with your apartment yet.'}">
+          No bills found.
+        </p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

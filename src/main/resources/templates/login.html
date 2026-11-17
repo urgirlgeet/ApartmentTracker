@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <p class="eyebrow">APARTMENT TRACKER</p>
+    <h1>Welcome back</h1>
+    <p class="muted">Sign in to manage your society services.</p>
+    <p class="success" th:if="${registered}">Account created. You can now sign in.</p>
+    <p class="alert" th:if="${param.error}">Invalid username or password.</p>
+    <p class="success" th:if="${param.logout}">You have been signed out.</p>
+    <form method="post" th:action="@{/login}" class="stack">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required autofocus>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Sign in</button>
+    </form>
+    <p class="auth-link">New resident? <a th:href="@{/signup}">Create an account</a></p>
+    <details class="auth-hints">
+      <summary>Show demo staff logins</summary>
+      <ul>
+        <li>Admin: <strong>admin</strong> / <strong>admin123</strong></li>
+        <li>Electrical: <strong>electrical</strong> / <strong>electrical123</strong></li>
+        <li>Plumbing: <strong>plumbing</strong> / <strong>plumbing123</strong></li>
+        <li>Water: <strong>water</strong> / <strong>water12345</strong></li>
+        <li>Cleaning: <strong>cleaning</strong> / <strong>cleaning123</strong></li>
+        <li>Lift: <strong>lift</strong> / <strong>lift12345</strong></li>
+        <li>Security: <strong>security</strong> / <strong>security123</strong></li>
+        <li>General maintenance: <strong>general</strong> / <strong>general123</strong></li>
+      </ul>
+    </details>
+  </main>
+</body>
+</html>

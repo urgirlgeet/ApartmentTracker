@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header th:replace="~{fragments/navigation :: navigation}"></header>
+  <main class="container">
+    <section class="welcome">
+      <p class="eyebrow">SOCIETY SERVICES</p>
+      <h1 th:text="|Hello, ${displayName}|">Hello</h1>
+      <p class="muted" th:if="${!#strings.isEmpty(apartmentNumber)}"
+         th:text="|${apartmentNumber}|">Apartment</p>
+      <p class="muted" th:if="${isAdmin}">Administrator dashboard</p>
+      <p class="muted" th:if="${isMaintenanceHead}">Maintenance team dashboard</p>
+      <p class="muted" th:if="${isResident}">Resident dashboard</p>
+    </section>
+    <section class="card-grid">
+      <a class="feature-card" th:href="@{/complaints}">
+        <span class="feature-icon">01</span>
+        <h2>Complaints</h2>
+        <p>Raise an issue and follow it through the resolution process.</p>
+        <span class="text-link">Open complaints &rarr;</span>
+      </a>
+      <a class="feature-card" th:href="@{/notices}">
+        <span class="feature-icon">02</span>
+        <h2>Notice board</h2>
+        <p>Read society updates and important announcements.</p>
+        <span class="text-link">View notices &rarr;</span>
+      </a>
+      <a class="feature-card" th:if="${isResident or isAdmin}" th:href="@{/bookings}">
+        <span class="feature-icon">03</span>
+        <h2>Facility booking</h2>
+        <p>Reserve shared society facilities and review upcoming bookings.</p>
+        <span class="text-link">View facility bookings &rarr;</span>
+      </a>
+      <a class="feature-card" th:if="${isResident or isAdmin}" th:href="@{/bills}">
+        <span class="feature-icon">04</span>
+        <h2 th:text="${isAdmin ? 'Billing dashboard' : 'Maintenance bills'}">Maintenance bills</h2>
+        <p th:text="${isAdmin
+            ? 'Create monthly bills and review collected and outstanding balances.'
+            : 'View your flat’s bills, outstanding balance, and payment history.'}">
+          View maintenance bills.
+        </p>
+        <span class="text-link" th:text="${isAdmin ? 'Open billing dashboard →' : 'View my bills →'}">View bills</span>
+      </a>
+      <a class="feature-card" th:if="${isMaintenanceHead}" th:href="@{/maintenance/staff}">
+        <span class="feature-icon">05</span>
+        <h2>My maintenance team</h2>
+        <p>Add staff members, assign requests, and follow your team's work.</p>
+        <span class="text-link">Manage my team &rarr;</span>
+      </a>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create resident account | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="login-page signup-page">
+  <main class="login-card signup-card">
+    <p class="eyebrow">APARTMENT TRACKER</p>
+    <h1>Create your account</h1>
+    <p class="muted">Set up your resident login and profile details together.</p>
+    <p class="alert" th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}"
+       th:text="${error}">Please check your information.</p>
+    <form method="post" th:action="@{/signup}" th:object="${signupForm}" class="stack signup-form">
+      <h2>Sign-in details</h2>
+      <label for="username">Username</label>
+      <input id="username" th:field="*{username}" autocomplete="username"
+             minlength="3" maxlength="50" pattern="[A-Za-z0-9._-]+" required>
+      <span class="field-error" th:errors="*{username}"></span>
+
+      <label for="password">Password</label>
+      <input id="password" th:field="*{password}" type="password" autocomplete="new-password"
+             minlength="8" maxlength="72" required>
+      <span class="field-error" th:errors="*{password}"></span>
+      <span class="field-error" th:errors="*{passwordWithinEncoderLimit}"></span>
+
+      <label for="confirmPassword">Confirm password</label>
+      <input id="confirmPassword" th:field="*{confirmPassword}" type="password"
+             autocomplete="new-password" required>
+      <span class="field-error" th:errors="*{passwordConfirmed}"></span>
+
+      <h2>Resident profile</h2>
+      <label for="fullName">Full name</label>
+      <input id="fullName" th:field="*{profile.fullName}" autocomplete="name" maxlength="100" required>
+      <span class="field-error" th:errors="*{profile.fullName}"></span>
+
+      <label for="phone">Phone number</label>
+      <input id="phone" th:field="*{profile.phone}" type="tel" autocomplete="tel" maxlength="30" required>
+      <span class="field-error" th:errors="*{profile.phone}"></span>
+
+      <label for="apartmentBlock">Apartment block</label>
+      <select id="apartmentBlock" th:field="*{profile.apartmentBlock}" required>
+        <option value="">Choose a block (A-Z)</option>
+        <option th:each="block : ${apartmentBlocks}" th:value="${block}" th:text="${block}"></option>
+      </select>
+      <span class="field-error" th:errors="*{profile.apartmentBlock}"></span>
+      <label for="apartmentUnit">Apartment number</label>
+      <select id="apartmentUnit" th:field="*{profile.apartmentUnit}" required>
+        <option value="">Choose an apartment (1-8)</option>
+        <option th:each="unit : ${apartmentNumbers}" th:value="${unit}" th:text="${unit}"></option>
+      </select>
+      <span class="field-error" th:errors="*{profile.apartmentUnit}"></span>
+
+      <label for="email">Email address</label>
+      <input id="email" th:field="*{profile.email}" type="email" autocomplete="email" maxlength="150" required>
+      <span class="field-error" th:errors="*{profile.email}"></span>
+
+      <label for="emergencyContactName">Emergency contact name <span class="muted">(optional)</span></label>
+      <input id="emergencyContactName" th:field="*{profile.emergencyContactName}" maxlength="100">
+      <span class="field-error" th:errors="*{profile.emergencyContactName}"></span>
+
+      <label for="emergencyContactPhone">Emergency contact phone <span class="muted">(optional)</span></label>
+      <input id="emergencyContactPhone" th:field="*{profile.emergencyContactPhone}" type="tel" maxlength="30">
+      <span class="field-error" th:errors="*{profile.emergencyContactPhone}"></span>
+
+      <button type="submit">Create account</button>
+    </form>
+    <p class="auth-link">Already registered? <a th:href="@{/login}">Sign in</a></p>
+  </main>
+</body>
+</html>

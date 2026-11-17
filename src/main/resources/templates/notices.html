@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notice board | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header th:replace="~{fragments/navigation :: navigation}"></header>
+  <main class="container">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">SOCIETY UPDATES</p>
+        <h1>Notice board</h1>
+      </div>
+    </div>
+
+    <section class="panel" th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
+      <h2>Publish a notice</h2>
+      <form method="post" th:action="@{/notices}" th:object="${noticeForm}" class="form-grid">
+        <div class="wide">
+          <label for="title">Title</label>
+          <input id="title" th:field="*{title}" maxlength="100" required>
+          <span class="field-error" th:errors="*{title}"></span>
+        </div>
+        <div class="wide">
+          <label for="description">Details</label>
+          <textarea id="description" th:field="*{description}" rows="4" maxlength="2000" required></textarea>
+          <span class="field-error" th:errors="*{description}"></span>
+        </div>
+        <div class="wide"><button type="submit">Publish notice</button></div>
+      </form>
+    </section>
+
+    <section class="notice-list">
+      <article class="notice-card" th:each="notice : ${notices}">
+        <div class="notice-meta">
+          <span class="eyebrow" th:text="${notice.publishedBy}">Administrator</span>
+          <time th:text="${notice.publishedAt}">Date</time>
+        </div>
+        <h2 th:text="${notice.title}">Notice title</h2>
+        <p class="notice-description" th:text="${notice.description}">Notice details</p>
+        <form method="post" th:if="${#authorization.expression('hasRole(''ADMIN'')')}"
+              th:action="@{/notices/{id}/delete(id=${notice.id})}">
+          <button class="button-danger button-small" type="submit">Delete notice</button>
+        </form>
+      </article>
+      <div class="panel empty-state" th:if="${#lists.isEmpty(notices)}">There are no notices yet.</div>
+    </section>
+  </main>
+</body>
+</html>

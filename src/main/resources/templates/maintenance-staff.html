@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maintenance team | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header th:replace="~{fragments/navigation :: navigation}"></header>
+  <main class="container">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">PEOPLE & OPERATIONS</p>
+        <h1>Maintenance staff directory</h1>
+        <p class="muted" th:text="|Your department: ${departmentName}. Directory includes all departments.|">Department</p>
+      </div>
+      <a class="text-link" th:href="@{/complaints}">&larr; View complaints</a>
+    </div>
+
+    <section class="panel">
+      <h2>Add staff to your department</h2>
+      <p class="muted">New staff receive a stable department-specific ID and report to your maintenance account.
+      </p>
+      <form method="post" th:action="@{/maintenance/staff}" th:object="${staffForm}" class="form-grid">
+        <div>
+          <label for="name">Full name</label>
+          <input id="name" th:field="*{name}" maxlength="100" required>
+          <span class="field-error" th:errors="*{name}"></span>
+        </div>
+        <div>
+          <label for="specialization">Specialization</label>
+          <input id="specialization" th:field="*{specialization}" list="specialization-options"
+                 maxlength="60" placeholder="e.g. Plumbing" required>
+          <datalist id="specialization-options">
+            <option value="Plumbing"><option value="Electrical"><option value="Water">
+            <option value="Cleaning"><option value="Lift"><option value="Security">
+            <option value="Internet"><option value="General maintenance">
+          </datalist>
+          <span class="field-error" th:errors="*{specialization}"></span>
+        </div>
+        <div>
+          <label for="phone">Phone number <span class="muted">(optional)</span></label>
+          <input id="phone" th:field="*{phone}" type="tel" maxlength="30" placeholder="+91 98765 43210">
+          <span class="field-error" th:errors="*{phone}"></span>
+        </div>
+        <div class="form-submit"><button type="submit">Add team member</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>All maintenance staff</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Staff ID</th><th>Name</th><th>Department</th><th>Specialization</th>
+              <th>Phone</th><th>Availability</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="staff : ${staffMembers}">
+              <td th:text="${staff.staffCode}">SP1</td>
+              <td th:text="${staff.name}">Name</td>
+              <td th:text="${staff.departmentName}">Department</td>
+              <td th:text="${staff.specialization}">Specialization</td>
+              <td th:text="${staff.phone != null ? staff.phone : '—'}">Phone</td>
+              <td>
+                <span class="status-badge" th:classappend="${!staff.active ? ' status-inactive' : ''}"
+                      th:text="${staff.active ? 'Active' : 'Inactive'}">Active</span>
+              </td>
+              <td>
+                <form method="post" th:if="${staff.active and staff.headUsername == #authentication.name}"
+                      th:action="@{/maintenance/staff/{id}/deactivate(id=${staff.id})}">
+                  <button class="button-danger button-small" type="submit">Deactivate</button>
+                </form>
+                <span class="muted" th:if="${staff.headUsername != #authentication.name}">Managed by department head</span>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(staffMembers)}">
+              <td class="empty-state" colspan="7">No maintenance staff added yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

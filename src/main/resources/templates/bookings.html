@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facility booking | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header th:replace="~{fragments/navigation :: navigation}"></header>
+  <main class="container">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">SHARED SOCIETY SPACES</p>
+        <h1>Facility booking</h1>
+        <p class="muted">Choose a future time for a facility. Times use the society application's local time; bookings for the same facility cannot overlap.</p>
+      </div>
+    </div>
+
+    <section class="panel" th:if="${!isAdmin}">
+      <h2>Reserve a facility</h2>
+      <p class="success" th:if="${param.created}">Your booking is confirmed.</p>
+      <p class="alert" th:if="${bookingError}" th:text="${bookingError}"></p>
+      <form method="post" th:action="@{/bookings}" th:object="${bookingForm}" class="form-grid">
+        <div>
+          <label for="facilityId">Facility</label>
+          <select id="facilityId" th:field="*{facilityId}" required>
+            <option value="">Choose a facility</option>
+            <option th:each="facility : ${facilities}" th:value="${facility.id}"
+                    th:text="|${facility.name} — ${facility.description}|"></option>
+          </select>
+          <span class="field-error" th:errors="*{facilityId}"></span>
+        </div>
+        <div>
+          <label for="startAt">Start</label>
+          <input id="startAt" type="datetime-local" th:field="*{startAt}" required>
+          <span class="field-error" th:errors="*{startAt}"></span>
+        </div>
+        <div>
+          <label for="endAt">End</label>
+          <input id="endAt" type="datetime-local" th:field="*{endAt}" required>
+          <span class="field-error" th:errors="*{endAt}"></span>
+        </div>
+        <div class="wide"><button type="submit">Book facility</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2 th:text="${isAdmin ? 'All facility bookings' : 'My bookings'}">My bookings</h2>
+      <p class="success" th:if="${bookingCancelled}">The booking was cancelled.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Facility</th>
+              <th>Start</th>
+              <th>End</th>
+              <th th:if="${isAdmin}">Resident</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="booking : ${bookings}">
+              <td th:text="${booking.facility.name}">Gym</td>
+              <td th:text="${booking.startAt}">Start</td>
+              <td th:text="${booking.endAt}">End</td>
+              <td th:if="${isAdmin}" th:text="${booking.residentUsername}">resident</td>
+              <td><span class="status-badge"
+                        th:text="${booking.status}">BOOKED</span></td>
+              <td>
+                <form method="post" th:if="${booking.status.name() == 'BOOKED'
+                    and (isAdmin or booking.residentUsername == #authentication.name)}"
+                      th:action="@{/bookings/{id}/cancel(id=${booking.id})}">
+                  <button class="button-danger button-small" type="submit">Cancel</button>
+                </form>
+                <span class="muted" th:if="${booking.status.name() == 'CANCELLED'}">—</span>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(bookings)}">
+              <td class="empty-state" th:attr="colspan=${isAdmin ? 6 : 5}">
+                No bookings yet.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

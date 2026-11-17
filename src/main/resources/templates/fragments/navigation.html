@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+  <header class="topbar" th:fragment="navigation">
+    <a class="brand" th:href="@{/dashboard}">Apartment Tracker</a>
+    <nav class="topbar-links" aria-label="Main navigation">
+      <a th:href="@{/dashboard}">Home</a>
+      <a th:href="@{/complaints}">Complaints</a>
+      <a th:href="@{/notices}">Notice board</a>
+      <a sec:authorize="hasAnyRole('RESIDENT', 'ADMIN')" th:href="@{/bookings}">Facility booking</a>
+      <a sec:authorize="hasAnyRole('RESIDENT', 'ADMIN')" th:href="@{/bills}">Maintenance bills</a>
+      <a sec:authorize="hasRole('MAINTENANCE_HEAD')" th:href="@{/maintenance/staff}">My maintenance team</a>
+      <a th:href="@{/profile}">My profile</a>
+    </nav>
+    <form method="post" th:action="@{/logout}">
+      <button class="button-secondary" type="submit">Sign out</button>
+    </form>
+  </header>
+</body>
+</html>

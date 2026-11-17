@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Complaints | Apartment Tracker</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header th:replace="~{fragments/navigation :: navigation}"></header>
+  <main class="container">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">SERVICE REQUESTS</p>
+        <h1>Complaints</h1>
+      </div>
+      <span class="role-badge"
+            th:text="${isAdmin ? 'Administrator view' : (isMaintenance ? 'Maintenance team' : 'Resident view')}">Resident view</span>
+    </div>
+
+    <section class="panel" th:if="${!isAdmin and !isMaintenance}">
+      <h2>Raise a complaint</h2>
+      <form method="post" th:action="@{/complaints}" th:object="${complaintForm}"
+            enctype="multipart/form-data" class="form-grid">
+        <div>
+          <label for="category">Category</label>
+          <select id="category" th:field="*{category}" required>
+            <option value="">Choose a category</option>
+            <option th:each="category : ${categories}"
+                    th:value="${category}"
+                    th:text="${category.displayName}"></option>
+          </select>
+          <span class="field-error" th:errors="*{category}"></span>
+        </div>
+        <div class="wide">
+          <label for="description">Describe the issue</label>
+          <textarea id="description" th:field="*{description}" rows="3" maxlength="1000"
+                    placeholder="Include details that will help us resolve it." required></textarea>
+          <span class="field-error" th:errors="*{description}"></span>
+        </div>
+        <div class="wide">
+          <label for="image">Add a photo <span class="muted">(optional, JPEG or PNG up to 5 MB)</span></label>
+          <input id="image" name="image" type="file" accept="image/jpeg,image/png">
+          <span class="field-error" th:if="${uploadError}" th:text="${uploadError}"></span>
+          <img id="image-preview" class="image-preview" alt="Selected complaint photo preview" hidden>
+        </div>
+        <div class="wide"><button type="submit">Submit complaint</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <h2 th:text="${isAdmin ? 'All complaints' : (isMaintenance ? 'Team complaints' : 'Your complaints')}">Complaints</h2>
+          <p class="muted" th:if="${isAdmin}">Assign work to staff and follow each request through resolution.</p>
+          <p class="muted" th:if="${isMaintenance}">Assign unassigned work to your team and track its progress.</p>
+        </div>
+      </div>
+      <form class="complaint-search" method="get" th:if="${isAdmin or isMaintenance}"
+            th:action="@{/complaints}">
+        <div>
+          <label for="complaint-search">Search complaints</label>
+          <input id="complaint-search" name="q" type="search" th:value="${searchQuery}"
+                 placeholder="Complaint ID, category, issue, resident, status, or staff">
+        </div>
+        <button type="submit">Search</button>
+        <a class="text-link" th:if="${searchQuery != null and !searchQuery.isEmpty()}"
+           th:href="@{/complaints}">Clear</a>
+      </form>
+      <p class="alert" th:if="${reopenError}" th:text="${reopenError}"></p>
+      <p class="alert" th:if="${complaintError}" th:text="${complaintError}"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Complaint ID</th>
+              <th>Category</th>
+              <th class="issue-heading">Issue</th>
+              <th>History</th>
+              <th th:if="${isAdmin or isMaintenance}">Resident</th>
+              <th>Photo</th>
+              <th>Status</th>
+              <th>Assigned staff</th>
+              <th>Submitted</th>
+              <th th:text="${!isAdmin and !isMaintenance ? 'Resident action' : 'Actions'}">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="complaint : ${complaints}">
+              <td><strong class="complaint-code" th:text="${complaint.complaintCode}">P1</strong></td>
+              <td th:text="${complaint.category.displayName}">Plumbing</td>
+              <td class="description-cell issue-cell">
+                <span class="issue-summary" th:text="${complaint.description}">Description</span>
+              </td>
+              <td class="history-cell">
+                <details class="complaint-history">
+                  <summary th:text="|History (${#lists.size(historyByComplaint[complaint.id])})|">History</summary>
+                  <ol class="timeline">
+                    <li th:each="event : ${historyByComplaint[complaint.id]}">
+                      <strong th:text="${event.description}">Status update</strong>
+                      <span th:text="|${event.actorUsername} · ${event.occurredAt}|">Actor · Date</span>
+                    </li>
+                  </ol>
+                </details>
+              </td>
+              <td th:if="${isAdmin or isMaintenance}" th:text="${complaint.createdBy}">resident</td>
+              <td>
+                <a th:if="${complaint.imageFilename != null}"
+                   th:href="@{/complaints/{id}/image(id=${complaint.id})}" target="_blank" rel="noopener">
+                  <img class="complaint-thumbnail" th:src="@{/complaints/{id}/image(id=${complaint.id})}"
+                       alt="Complaint photo">
+                </a>
+                <span class="muted" th:if="${complaint.imageFilename == null}">—</span>
+              </td>
+              <td><span class="status-badge" th:text="${#strings.replace(complaint.status, '_', ' ')}">SUBMITTED</span></td>
+              <td>
+                <span th:if="${complaint.assignedStaff != null}"
+                      th:text="|${complaint.assignedStaff.name} · ${complaint.assignedStaff.specialization}|">Staff</span>
+                <span class="muted" th:if="${complaint.assignedStaff == null}">Unassigned</span>
+              </td>
+              <td th:text="${complaint.createdAt}">Date</td>
+              <td th:if="${isAdmin or isMaintenance}">
+                <form method="post" class="inline-form"
+                      th:if="${complaint.status != T(com.apartment.tracker.complaint.ComplaintStatus).RESOLVED
+                        and !complaint.status.terminal and !#lists.isEmpty(staffByComplaint[complaint.id])
+                        and (isAdmin or complaint.assignedStaff == null
+                          or complaint.assignedStaff.headUsername == #authentication.name)}"
+                      th:action="@{/complaints/{id}/assign(id=${complaint.id})}">
+                  <label class="sr-only" th:for="|staff-${complaint.id}|">Assign maintenance staff</label>
+                  <select th:id="|staff-${complaint.id}|" name="staffId" required>
+                    <option value="">Assign staff</option>
+                    <option th:each="staff : ${staffByComplaint[complaint.id]}" th:value="${staff.id}"
+                            th:text="|${staff.staffCode} · ${staff.name} · ${complaint.category.department.displayName}|"></option>
+                  </select>
+                  <button class="button-small" type="submit">Assign</button>
+                </form>
+                <form method="post"
+                      th:if="${isAdmin and complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).RESOLVED}"
+                      th:action="@{/complaints/{id}/advance(id=${complaint.id})}">
+                  <button class="button-small" type="submit">Close complaint</button>
+                </form>
+                <span class="muted" th:if="${complaint.status.terminal}">Complete</span>
+                <a class="text-link" th:if="${#lists.isEmpty(staffByComplaint[complaint.id])
+                    and !complaint.status.terminal and isMaintenance}"
+                   th:href="@{/maintenance/staff}">
+                  Add your staff first
+                </a>
+              </td>
+              <td th:if="${isMaintenance}">
+                <form method="post"
+                      th:if="${complaint.assignedStaff != null
+                        and complaint.assignedStaff.headUsername == #authentication.name
+                        and (complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).ASSIGNED
+                          or complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).REOPENED
+                          or complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).IN_PROGRESS)}"
+                      th:action="@{/complaints/{id}/status(id=${complaint.id})}">
+                  <button class="button-small" type="submit"
+                          th:text="${complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).ASSIGNED
+                            or complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).REOPENED
+                            ? 'Start work' : 'Mark resolved'}">Update</button>
+                </form>
+                <span class="muted"
+                      th:if="${complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).RESOLVED}">Awaiting resident confirmation</span>
+                <span class="muted"
+                      th:if="${complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).CLOSED}">Closed by resident</span>
+              </td>
+              <td th:if="${!isAdmin and !isMaintenance}">
+                <div class="resident-actions"
+                     th:if="${complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).RESOLVED
+                       or complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).CLOSED}">
+                  <form method="post" th:if="${complaint.status == T(com.apartment.tracker.complaint.ComplaintStatus).RESOLVED}"
+                        th:action="@{/complaints/{id}/confirm(id=${complaint.id})}">
+                    <button class="button-small" type="submit">Confirm resolved</button>
+                  </form>
+                  <form method="post" class="reopen-form"
+                        th:action="@{/complaints/{id}/reopen(id=${complaint.id})}">
+                    <label class="sr-only" th:for="|reopen-${complaint.id}|">Reason for reopening</label>
+                    <input th:id="|reopen-${complaint.id}|" name="reason" maxlength="500"
+                           placeholder="Why reopen? (required)" required>
+                    <button class="button-danger button-small" type="submit">Reopen</button>
+                  </form>
+                </div>
+                <span class="muted"
+                      th:if="${complaint.status != T(com.apartment.tracker.complaint.ComplaintStatus).RESOLVED
+                        and complaint.status != T(com.apartment.tracker.complaint.ComplaintStatus).CLOSED}">—</span>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(complaints)}">
+              <td class="empty-state" th:attr="colspan=${isAdmin or isMaintenance ? 10 : 9}"
+                  th:text="${isMaintenance ? 'No complaints are assigned to active maintenance staff yet.' : 'No complaints have been submitted yet.'}">
+                No complaints have been submitted yet.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    const imageInput = document.getElementById("image");
+    const imagePreview = document.getElementById("image-preview");
+    imageInput?.addEventListener("change", () => {
+      const file = imageInput.files?.[0];
+      if (!file) {
+        imagePreview.hidden = true;
+        imagePreview.removeAttribute("src");
+        return;
+      }
+      imagePreview.src = URL.createObjectURL(file);
+      imagePreview.hidden = false;
+    });
+  </script>
+</body>
+</html>
